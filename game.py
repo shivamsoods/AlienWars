@@ -17,9 +17,9 @@ RIGHT = 'right'
 
 MAX_HEALTH=3
 INITIAL_SIZE=30
-WIN_SIZE=230
+WIN_SIZE=300
 
-PLAYER_VELOCITY = 20
+PLAYER_VELOCITY = 9
 ENEMY_VEL_MIN=2
 ENEMY_VEL_MAX=7
 
@@ -43,9 +43,7 @@ def main():
     CLOCK = pygame.time.Clock()
 
     PLAYERSURFACE=pygame.image.load("alien.png")
-    PLAYERSURFACE1=pygame.image.load("pikachu.png") # baad me use karne k liye phle hi flip kr liya
     STARSURFACE=pygame.image.load("star.png")
-
 
     while True:
         runGame()
@@ -56,12 +54,11 @@ def runGame():
     gameOverMode = False      # if the player has lost
     gameOverStartTime = 0     # time the player lost
     winMode = False           # if the player has won
-
     gameOverSurf = BASICFONT.render('Game Over', True, WHITE)
     gameOverRect = gameOverSurf.get_rect()
     gameOverRect.center = (HALFSCREENWIDTH, HALFSCREENHEIGHT)
 
-    winSurf = BASICFONT.render('You have achieved OMEGA ALIEN!', True, WHITE)
+    winSurf = BASICFONT.render('You won!', True, WHITE)
     winRect = winSurf.get_rect()
     winRect.center = (HALFSCREENWIDTH, HALFSCREENHEIGHT)
 
@@ -73,17 +70,12 @@ def runGame():
         "facing":LEFT,
         "size":INITIAL_SIZE,
         "health":MAX_HEALTH,
-        "x":HALFSCREENWIDTH,
+        "x":HALFSCREENWIDTH,   #yaha x or y ki value li
         "y":HALFSCREENHEIGHT
     }
 
     stars = []
     enemies=[]
-
-    moveLeft = False
-    moveRight = False
-    moveUp = False
-    moveDown = False
 
     for i in range(10):
         stars.append(makeNewStar(camx,camy))
@@ -91,21 +83,14 @@ def runGame():
         stars[i]['y']= random.randint(camy,camy + SCREENHEIGHT)
 
     while True:
-
-        if invulnerableMode and time.time() - invulnerableStartTime > INVULNTIME:
-            invulnerableMode = False
-
         DISPLAYSURF.fill(BLACK)  # global
        # print("hi")
         for eObj in enemies:
             # move the enemies
             eObj['x'] += eObj['movex']
             eObj['y'] += eObj['movey']
-
-       #      # random chance they change direction
-        if random.randint(0, 99) < 2:
-                eObj['movex'] = getRandomVelocity()
-                eObj['movey'] = getRandomVelocity()
+             eObj['movex'] = getRandomVelocity()
+            eObj['movey'] = getRandomVelocity()
 
         for i in range (len(stars)-1,-1):   #see the below one
             if stars[i]['x'] not in range(camx-SCREENWIDTH,camx+3*SCREENWIDTH) and stars[i]['y'] not in range(camy-SCREENHEIGHT,camy+3*SCREENHEIGHT):
@@ -117,23 +102,13 @@ def runGame():
 
                 #append kar rahe h
 
-        while len(stars) < NUM_STARS:
-            stars.append(makeNewStar(camx,camy))
+        while len(stars)<NUM_STARS:
+            stars.append(NewStar(camx,camy))
 
-        while len(enemies) < NUM_ENEMY:
-            enemies.append(makeNewEnemies(camx, camy))
+        while len(enemies) < NUM_ENEMY:         #jaise stars append kiye the wese hi enemies append kar rahe h frame me
+            enemies.append(NewEnemies(camx, camy))
 
-        playerCenterx = playerObject['x'] + int(playerObject['size'] / 2)
-        playerCentery = playerObject['y'] + int(playerObject['size'] / 2)
-        if (camx + HALFSCREENWIDTH) - playerCenterx > CAMERASLACK:
-            camx = playerCenterx + CAMERASLACK - HALFSCREENWIDTH
-        elif playerCenterx - (camx + HALFSCREENWIDTH) > CAMERASLACK:
-            camx = playerCenterx - CAMERASLACK - HALFSCREENWIDTH
-        if (camy + HALFSCREENHEIGHT) - playerCentery > CAMERASLACK:
-            camy = playerCentery + CAMERASLACK - HALFSCREENHEIGHT
-        elif playerCentery - (camy + HALFSCREENHEIGHT) > CAMERASLACK:
-            camy = playerCentery - CAMERASLACK - HALFSCREENHEIGHT
-
+        
         for st in stars:
            #changes
             sRect = pygame.Rect(st['x']-camx,   #camx and camy change ho rha h
@@ -163,60 +138,7 @@ def runGame():
             drawHealthMeter(playerObject['health'])         #Health meter niche define kiya h
 
 
-        for event in pygame.event.get(): # event handling loop
-            if event.type == QUIT:
-                pygame.quit()
-                sys.exit()
 
-            elif event.type == KEYDOWN:
-                if event.key in (K_UP, K_w):
-                    moveDown = False
-                    moveUp = True
-                elif event.key in (K_DOWN, K_s):
-                    moveUp = False
-                    moveDown = True
-                elif event.key in (K_LEFT, K_a):
-                    moveRight = False
-                    moveLeft = True
-                    if playerObject['x'] < camx + HALFSCREENWIDTH:
-                        camx -= PLAYER_VELOCITY
-                    #if playerObject['facing'] != LEFT: # change player image
-                     #   playerObject['surface'] = pygame.transform.scale(PLAYERSURFACE, (playerObject['size'], playerObject['size']))
-                    #playerObject['facing'] = LEFT
-                elif event.key in (K_RIGHT, K_d):
-                    moveLeft = False
-                    moveRight = True
-                    #if playerObject['facing'] != RIGHT: # change player image
-                    #    playerObject['surface'] = pygame.transform.scale(PLAYERSURFACE1, (playerObject['size'], playerObject['size']))
-                    #playerObject['facing'] = RIGHT
-                elif winMode and event.key == K_r:
-                    return
-
-            elif event.type == KEYUP:
-                # stop moving the player's squirrel
-                if event.key in (K_LEFT, K_a):
-                    moveLeft = False
-                elif event.key in (K_RIGHT, K_d):
-                    moveRight = False
-                elif event.key in (K_UP, K_w):
-                    moveUp = False
-                elif event.key in (K_DOWN, K_s):
-                    moveDown = False
-
-                elif event.key == K_ESCAPE:
-                    pygame.quit()
-                    sys.exit()
-
-        if not gameOverMode:
-            # actually move the player
-            if moveLeft:
-                playerObject['x'] -= PLAYER_VELOCITY
-            if moveRight:
-                playerObject['x'] += PLAYER_VELOCITY
-            if moveUp:
-                playerObject['y'] -= PLAYER_VELOCITY
-            if moveDown:
-                playerObject['y'] += PLAYER_VELOCITY
 
             for i in range(len(enemies) - 1, -1, -1):   #colliding function
                 eObj = enemies[i]
@@ -225,39 +147,85 @@ def runGame():
 
                     if eObj['width'] * eObj['height'] <= playerObject['size'] ** 2:
                         # player is larger and eats the squirrel
-                        playerObject['size'] += int((eObj['width'] * eObj['height']) ** 0.2 )+1
+                        playerObject['size'] += int((eObj['width'] * eObj['height']) ** 0.2) + 1
                         del enemies[i]
-                        playerObject['surface']=pygame.transform.scale(PLAYERSURFACE,(playerObject['size'],playerObject['size']))
 
                         if playerObject['size'] > WIN_SIZE:
                             winMode = True  # turn on "win mode"
-
-                    elif not invulnerableMode:
+                        elif not invulnerableMode:
                             # player is smaller and takes damage
                             invulnerableMode = True
-                            invulnerableStartTime = time.time()
                             playerObject['health'] -= 1
                             if playerObject['health'] == 0:
                                 gameOverMode = True  # turn on "game over mode"
-                                gameOverStartTime = time.time()
-
-        if winMode :
-            DISPLAYSURF.blit(winSurf,winRect)
-        elif gameOverMode:
-            DISPLAYSURF.blit(gameOverSurf,gameOverRect)
+                              
 
 
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == KEYDOWN or event.type == KEYUP:
+                if event.key == K_ESCAPE:
+                    pygame.quit()
+                    sys.exit(0)
+                if pygame.key.get_pressed()[K_LEFT]:
+                    if playerObject['facing']!=LEFT: # iski wajah se left right move nahi kar raha tha don't know why
+                       # playerObject['surface'] = pygame.transform.scale(PLAYERSURFACE,
+                                                                     # (playerObject['size'], playerObject['size']))
+                        #pygame.transform.flip(PLAYERSURFACE,False,True)  # yaha changes honge
+                        playerObject['facing']=LEFT
+                    playerObject['x'] -= PLAYER_VELOCITY
+                    # movex -= PLAYER_VELOCITY ye nahi hoga
+                    if playerObject['x'] < camx+HALFSCREENWIDTH :
+                       camx -= PLAYER_VELOCITY
+        
+                if pygame.key.get_pressed()[K_RIGHT]:
+                    if playerObject['facing']!=RIGHT:
+                        #pygame.transform.flip(PLAYERSURFACE,False,True)
+        
+                        playerObject['facing']=RIGHT
+                    playerObject['x'] += PLAYER_VELOCITY
+                    #movex += PLAYER_VELOCITY
+                    if playerObject['x']> camx+HALFSCREENWIDTH:
+                        camx += PLAYER_VELOCITY
+        
+                if pygame.key.get_pressed()[K_UP]:
+                   # movey -= PLAYER_VELOCITY
+                   playerObject['y'] -= PLAYER_VELOCITY
+        
+                #if movey < camy+50 : yaha 50 ki jagah halfscreenheight le li
+                if playerObject['y'] < camy+HALFSCREENHEIGHT:
+                        camy -= PLAYER_VELOCITY
+        
+                if pygame.key.get_pressed()[K_DOWN]:
+                    playerObject['y'] += PLAYER_VELOCITY
+                   # movey += PLAYER_VELOCITY
+        
+                    if playerObject['y']> camy+HALFSCREENHEIGHT :
+                       camy += PLAYER_VELOCITY
+        
+                elif event.key== pygame.K_ESCAPE:
+                    pygame.quit()
+                    sys.exit()
 
-
-
-
+            elif event.type == KEYUP:
+                # stop moving the player's squirrel
+                if event.key in (K_LEFT, K_a):
+                    playerObject['x'] = playerObject['x']
+                elif event.key in (K_RIGHT, K_d):
+                   playerObject['x']=playerObject['x']
+                elif event.key in (K_UP, K_w):
+                    playerObject['y']=playerObject['y']
+                elif event.key in (K_DOWN, K_s):
+                    playerObject['y']=playerObject['y']
 
         pygame.display.update()
         CLOCK.tick(FPS)
 
 
 
-def makeNewStar(camx,camy):
+def NewStar(camx,camy):
     st = {}
     st["width"] = STARSURFACE.get_width()
     st["height"]= STARSURFACE.get_height()
@@ -265,17 +233,15 @@ def makeNewStar(camx,camy):
     st['rect'] = pygame.Rect(st['x'], st['y'], st['width'], st['height'])
     return st
 
-def makeNewEnemies(camx, camy):    #yaha par enemies banaye
+def NewEnemies(camx, camy):    #yaha par enemies banaye
     eObj = {}
-    generalSize = random.randint(5, 25)
-    eObj['width']  = (generalSize * random.randint(1, 3))
-    eObj['height'] = (generalSize * random.randint(1, 3))
+    generalSize = random.randint(15, 25)
+    multiplier = random.randint(2, 5)
+    eObj['width']  = (generalSize + random.randint(0, 10)) * multiplier
+    eObj['height'] = (generalSize + random.randint(0, 10)) * multiplier
     eObj['x'], eObj['y'] = cord_inactive(camx, camy, eObj['width'], eObj['height'])
     eObj['movex'] = getRandomVelocity()
     eObj['movey'] = getRandomVelocity()
-    eObj['surface'] = pygame.transform.scale(PLAYERSURFACE1, (eObj['width'], eObj['height']))
-
-    return eObj
 
 def getRandomVelocity():
     speed = random.randint(ENEMY_VEL_MIN, ENEMY_VEL_MAX)
@@ -286,9 +252,9 @@ def getRandomVelocity():
 
 def drawHealthMeter(currentHealth):
     for i in range(currentHealth): # draw red health bars
-        pygame.draw.rect(DISPLAYSURF, RED,   (15, 5 + (10 * MAX_HEALTH) - i * 10, 20, 10))
+        pygame.draw.rect(DISPLAYSURF, RED,   (10, 10 + (5 * MAX_HEALTH) - i * 10, 20, 10))
     for i in range(MAX_HEALTH): # draw the white outlines
-        pygame.draw.rect(DISPLAYSURF, WHITE, (15, 5 + (10 * MAX_HEALTH) - i * 10, 20, 10), 1)
+        pygame.draw.rect(DISPLAYSURF, WHITE, (10, 10 + (5 * MAX_HEALTH) - i * 10, 20, 10), 1)
 
 
 def cord_inactive(camx, camy,objWidth,objHeight):
